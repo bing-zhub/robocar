@@ -1,0 +1,70 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+	<title>Joy</title>
+	<meta charset="utf-8">
+	<meta name="author" content="">
+	<script src="joy.min.js"></script>
+	<script src="https://www.espruino.com/js/uart.js"></script>
+
+	<style type="text/css">
+		.joy {
+			height: 400px;
+			width: 400px;
+		}
+	</style>
+</head>
+
+<body>
+	<button onclick="disconnect();">Disconnect</button>
+	<button onclick="connect();">Connect</button>
+	<div id="joy" class="joy"></div>
+	<script type="text/javascript">
+		var joy = new JoyStick('joy', {
+			internalFillColor: '#0D47A1',
+			internalStrokeColor: '#BBDEFB',
+			externalStrokeColor: '#448AFF'
+		}, function (stickData) {
+			// Get X and Y from the Joystick, do whatever scaling and calibrating you need to do based on your hardware.
+			let x = parseInt(stickData.x);
+			let y = parseInt(stickData.y);
+			move(x, y);
+		});
+
+		var connection;
+		function connect() {
+			if (connection) {
+				disconnect()
+			}
+			UART.connect(function (c) {
+				if (!c) {
+					console.log("Couldn't connect!");
+					return;
+				}
+				connection = c;
+				alert(joy.GetOffset());
+			});
+		}
+		function disconnect() {
+			if (connection) {
+				connection.close();
+				connection = undefined;
+			}
+		}
+		function move(x, y) {
+			x = -x;
+			v = (100 - Math.abs(x)) * (y / 100) + y;
+			w = (100 - Math.abs(y)) * (x / 100) + x;
+			cmd = `move(${(v - w) / 2}, ${(v + w) / 2});\n`;
+			console.log(cmd);
+			if (!connection) {
+				console.log('No connection!');
+				return;
+			}
+			connection.write(cmd);
+		}
+	</script>
+</body>
+
+</html>
